@@ -32,6 +32,10 @@ func (cli *Client) keepAliveLoop(ctx, connCtx context.Context) {
 	var errorCount int
 	for {
 		interval := rand.Int64N(KeepAliveIntervalMax.Milliseconds()-KeepAliveIntervalMin.Milliseconds()) + KeepAliveIntervalMin.Milliseconds()
+		// A client-level interval wins over the package-wide range (per-session tuning).
+		if fixed := cli.KeepAliveInterval; fixed > 0 {
+			interval = fixed.Milliseconds()
+		}
 		select {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			isSuccess, shouldContinue := cli.sendKeepAlive(connCtx)

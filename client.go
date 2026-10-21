@@ -77,6 +77,8 @@ type Client struct {
 	expectedDisconnect    *exsync.Event
 	forceAutoReconnect    atomic.Bool
 	EnableAutoReconnect   bool
+	// KeepAliveInterval, when set, replaces the random KeepAliveIntervalMin..Max range for this client.
+	KeepAliveInterval time.Duration
 	InitialAutoReconnect  bool
 	LastSuccessfulConnect time.Time
 	AutoReconnectErrors   int
