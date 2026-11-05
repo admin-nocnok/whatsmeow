@@ -177,6 +177,9 @@ type Client struct {
 	// the client will disconnect.
 	PrePairCallback func(jid types.JID, platform, businessName string) bool
 
+	// ShouldIgnoreJID drops the nodes of the chats it rejects before decrypting them. It runs inline: keep it cheap.
+	ShouldIgnoreJID func(ctx context.Context, chat types.JID) bool
+
 	// GetClientPayload is called to get the client payload for connecting to the server.
 	// This should NOT be used for WhatsApp (to change the OS name, update fields in store.BaseClientPayload directly).
 	GetClientPayload func() *waWa6.ClientPayload
@@ -945,7 +948,11 @@ Loop:
 			doneChan := make(chan struct{})
 			start := time.Now()
 			go func() {
-				cli.nodeHandlers[node.Tag](evtCtx, node)
+				if ignored, nack := cli.ignoredNode(evtCtx, node); ignored {
+					cli.sendAck(evtCtx, node, nack)
+				} else {
+					cli.nodeHandlers[node.Tag](evtCtx, node)
+				}
 				duration := time.Since(start)
 				close(doneChan)
 				if duration > 5*time.Second {
